@@ -1,0 +1,171 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Dashboard</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.sidebar{
+    width:240px;
+    height:100vh;
+    background:#1f2937;
+    position:fixed;
+    color:white;
+}
+
+.sidebar h2{
+    text-align:center;
+    padding:20px;
+    background:#111827;
+}
+
+.sidebar ul{
+    list-style:none;
+}
+
+.sidebar ul li{
+    padding:18px;
+    cursor:pointer;
+}
+
+.sidebar ul li:hover{
+    background:#374151;
+}
+
+.main{
+    margin-left:240px;
+    padding:30px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+input,select,textarea{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    margin-bottom:15px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+pre{
+    background:#111827;
+    color:#00ff99;
+    padding:15px;
+    border-radius:8px;
+    margin-top:20px;
+    overflow:auto;
+}
+</style>
+
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>API Panel</h2>
+
+    <ul>
+        <li>🏠 Dashboard</li>
+        <li>🌐 REST APIs</li>
+        <li>🔐 Authentication</li>
+        <li>☁ Cloud APIs</li>
+        <li>📊 Analytics</li>
+        <li>⚙ Settings</li>
+    </ul>
+</div>
+
+<div class="main">
+
+<div class="card">
+
+<h2>API Tester</h2>
+
+<select id="method">
+<option>GET</option>
+<option>POST</option>
+<option>PUT</option>
+<option>DELETE</option>
+</select>
+
+<input type="text" id="url" placeholder="Enter API URL">
+
+<textarea id="body" rows="6" placeholder="JSON Body"></textarea>
+
+<button onclick="callAPI()">Send Request</button>
+
+<pre id="output">Response will appear here...</pre>
+
+</div>
+
+</div>
+
+<script>
+
+async function callAPI(){
+
+let method=document.getElementById("method").value;
+let url=document.getElementById("url").value;
+let body=document.getElementById("body").value;
+
+let options={
+method:method,
+headers:{
+"Content-Type":"application/json"
+}
+};
+
+if(method!="GET")
+options.body=body;
+
+try{
+
+let response=await fetch(url,options);
+
+let data=await response.json();
+
+document.getElementById("output").textContent=
+JSON.stringify(data,null,4);
+
+}
+catch(e){
+
+document.getElementById("output").textContent=e;
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
