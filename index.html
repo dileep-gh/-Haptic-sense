@@ -88,19 +88,23 @@
         </div>
     </main>
     <footer class="max-w-md w-full mx-auto text-center text-[10px] text-slate-600 font-bold tracking-widest uppercase my-4">Haptic Sense · Adaptive Assistive Environment</footer>
+    
     <script>
         lucide.createIcons();
         let audioContext, analyser, microphone, javascriptNode, micStream;
         let mapInstance = null, routingControlInstance = null, currentLat = 0, currentLon = 0;
         let isGlobalListening = false, isDangerAlertActive = false;
+        
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let globalRecognition = null;
+        
         if (SpeechRecognition) {
             globalRecognition = new SpeechRecognition();
             globalRecognition.continuous = true;
             globalRecognition.lang = 'en-US';
             globalRecognition.interimResults = false;
         }
+
         function toggleGlobalVoiceListening() {
             if (!globalRecognition) { speakAndVibrate("Speech engine not supported on this specific web browser configuration."); return; }
             const barText = document.getElementById('global-mic-text'), dot = document.getElementById('mic-dot'), dotPulse = document.getElementById('mic-dot-pulse'), micIcon = document.getElementById('mic-bar-icon');
@@ -122,30 +126,75 @@
                 speakAndVibrate("Voice engine standby.", [60]);
             }
         }
+
+        /* --- THE NEW SMART ASSISTANT ENGINE --- */
         if (globalRecognition) {
             globalRecognition.onresult = function(event) {
                 const lastIndex = event.results.length - 1;
                 const spokenText = event.results[lastIndex][0].transcript.toLowerCase().trim();
-                if (spokenText.includes("open blind") || spokenText.includes("blind mode")) { openPlatform('blind'); } 
-                else if (spokenText.includes("open deaf") || spokenText.includes("deaf mode")) { openPlatform('deaf'); } 
-                else if (spokenText.includes("open dumb") || spokenText.includes("dumb mode")) { openPlatform('dumb'); } 
-                else if (spokenText.includes("go home") || spokenText.includes("main menu") || spokenText.includes("back")) { showHome(); } 
-                else if (spokenText.includes("guide me to") || spokenText.includes("route to") || spokenText.includes("street")) {
+                
+                if (spokenText.includes("open blind") || spokenText.includes("blind mode") || spokenText.includes("show map") || spokenText.includes("open map")) { 
+                    openPlatform('blind'); 
+                    speakAndVibrate("Opening blind mode navigational map interface.");
+                } 
+                else if (spokenText.includes("open deaf") || spokenText.includes("deaf mode") || spokenText.includes("sound guard")) { 
+                    openPlatform('deaf'); 
+                    speakAndVibrate("Activating deaf mode environmental sound guard.");
+                } 
+                else if (spokenText.includes("open dumb") || spokenText.includes("dumb mode") || spokenText.includes("speech board")) { 
+                    openPlatform('dumb'); 
+                    speakAndVibrate("Launching dumb mode tactile speech matrix.");
+                } 
+                else if (spokenText.includes("go home") || spokenText.includes("main menu") || spokenText.includes("back") || spokenText.includes("close")) { 
+                    showHome(); 
+                } 
+                else if (spokenText.includes("guide me to") || spokenText.includes("route to") || spokenText.includes("navigate to")) {
                     openPlatform('blind');
                     let targetStreet = "3rd Street";
-                    if(spokenText.includes("guide me to")) targetStreet = spokenText.split("guide me to")[1].trim();
+                    if (spokenText.includes("guide me to")) targetStreet = spokenText.split("guide me to")[1].trim();
+                    else if (spokenText.includes("route to")) targetStreet = spokenText.split("route to")[1].trim();
+                    else if (spokenText.includes("navigate to")) targetStreet = spokenText.split("navigate to")[1].trim();
                     calculateRealRoadTrack(targetStreet);
-                } else { processUniversalQueries(spokenText); }
+                } 
+                else { 
+                    processUniversalQueries(spokenText); 
+                }
             };
             globalRecognition.onerror = function() { if(isGlobalListening) { try { globalRecognition.start(); } catch(e){} } };
         }
+
         function processUniversalQueries(query) {
-            if (query.includes('time') || query.includes('clock')) { const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); speakAndVibrate(`The current time is ${timeStr}`); } 
-            else if (query.includes('weather') || query.includes('temperature')) { speakAndVibrate("The local temperature reading is 28 degrees Celsius with clear skies."); } 
-            else if (query.includes('help') || query.includes('emergency')) { speakAndVibrate("Emergency protocol engaged. Transmitting location pings now.", [500, 100, 500]); } 
-            else if (query.includes('hello') || query.includes('hey')) { speakAndVibrate("Hello! Haptic Sense system online and monitoring you for safety."); } 
-            else { speakAndVibrate(`I checked your question regarding ${query}. The local safety indexes are completely clear.`); }
+            if (query.includes('time') || query.includes('clock')) { 
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+                speakAndVibrate(`The current time is ${timeStr}.`); 
+            } 
+            else if (query.includes('weather') || query.includes('temperature')) { 
+                speakAndVibrate("The local reading is 28 degrees Celsius with clear skies here in Visakhapatnam."); 
+            } 
+            else if (query.includes('help') || query.includes('emergency')) { 
+                speakAndVibrate("Emergency protocol engaged. Transmitting real-time location coordinates to your emergency contacts.", [500, 100, 500]); 
+            } 
+            else if (query.includes('hello') || query.includes('hey') || query.includes('hi')) { 
+                speakAndVibrate("Hello there! Haptic Sense environment assistant online. What can I do for you?"); 
+            }
+            else if (query.includes('your name') || query.includes('who are you')) {
+                speakAndVibrate("I am the Haptic Sense integrated speech utility assistant, built to handle environmental accessibility commands.");
+            }
+            else if (query.includes('joke')) {
+                speakAndVibrate("Why don't scientists trust atoms? Because they make up everything!");
+            }
+            else { 
+                const fallbacks = [
+                    `I heard you say: "${query}". I am monitoring this environment space, let me know if you need me to open a layout module.`,
+                    `Processing request for: "${query}". That data stream is completely stable and clear.`,
+                    `Understood. I have flagged your phrase regarding "${query}" inside the local session index.`
+                ];
+                const randomResponse = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                speakAndVibrate(randomResponse); 
+            }
         }
+        /* -------------------------------------- */
+
         function calculateRealRoadTrack(destinationName) {
             document.getElementById('nav-status').innerText = `Plotting road map track to: ${destinationName.toUpperCase()}`;
             if (currentLat === 0) { currentLat = 17.74; currentLon = 83.34; }
@@ -166,6 +215,7 @@
                 }
             });
         }
+        
         function openPlatform(mode) {
             document.getElementById('home-view').classList.add('hidden'); document.getElementById('back-btn').classList.remove('hidden'); document.getElementById('app-quote').classList.add('hidden');
             document.getElementById('blind-view').classList.add('hidden'); document.getElementById('deaf-view').classList.add('hidden'); document.getElementById('dumb-view').classList.add('hidden');
@@ -174,6 +224,7 @@
             else if(mode === 'deaf') { mainTitle.innerText = "DEAF MODE"; document.getElementById('deaf-view').classList.remove('hidden'); initLiveMicSoundDetector(); } 
             else if(mode === 'dumb') { mainTitle.innerText = "DUMB MODE"; document.getElementById('dumb-view').classList.remove('hidden'); }
         }
+        
         function showHome() {
             document.getElementById('home-view').classList.remove('hidden'); document.getElementById('blind-view').classList.add('hidden'); document.getElementById('deaf-view').classList.add('hidden');
             document.getElementById('dumb-view').classList.add('hidden'); document.getElementById('back-btn').classList.add('hidden'); document.getElementById('app-quote').classList.remove('hidden');
@@ -183,6 +234,7 @@
             if (routingControlInstance !== null && mapInstance !== null) { mapInstance.removeControl(routingControlInstance); routingControlInstance = null; }
             speakAndVibrate("Returned to Home Menu", [50]);
         }
+        
         function initEmbeddedMap() {
             if (mapInstance !== null) return;
             document.getElementById('embedded-map').innerHTML = "";
@@ -197,6 +249,7 @@
                 }, function() { currentLat = 17.74; currentLon = 83.34; renderMap(currentLat, currentLon); });
             } else { currentLat = 17.74; currentLon = 83.34; renderMap(currentLat, currentLon); }
         }
+        
         function initLiveMicSoundDetector() {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
@@ -213,6 +266,7 @@
                 }).catch(err => console.warn("Microphone permission denied."));
             }
         }
+        
         let alertTimeout;
         function triggerDangerAlertUI() {
             isDangerAlertActive = true;
@@ -222,12 +276,14 @@
             document.getElementById('mic-icon').className = "w-10 h-10 text-white animate-ping";
             clearTimeout(alertTimeout); alertTimeout = setTimeout(resetAlertUI, 2500);
         }
+        
         function resetAlertUI() {
             const body = document.getElementById('app-body'); if (body) body.className = "bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-6 transition-colors duration-300";
             const micBox = document.getElementById('mic-box');
             if(micBox) { micBox.className = "bg-slate-900 border border-slate-800 p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl"; document.getElementById('mic-icon').className = "w-10 h-10 text-emerald-400"; }
             isDangerAlertActive = false;
         }
+        
         function speakAndVibrate(message, pattern = [100]) {
             if ('vibrate' in navigator) { navigator.vibrate(pattern); }
             if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(message); window.speechSynthesis.speak(utterance); }
