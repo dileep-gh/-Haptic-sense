@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haptic Sense Console</title>
+    
+    <!-- iOS Native App Download & Logo Configurations -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HapticSense">
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <!-- Leaflet JS Map Engine Styling Framework -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        /* --- Premium Cyber-Tactical Base Framework --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #020306;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #E2E8F0;
+            overflow: hidden;
+        }
+
+        /* --- Rigid Mobile Device Wrapper --- */
+        .device-container {
+            width: 100%;
+            max-width: 440px;
+            height: 100vh;
+            max-height: 920px;
+            background-color: #04050E;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Support for standalone notch configurations on iOS devices */
+        @supports (-webkit-touch-callout: none) {
+            .device-container {
+                height: -webkit-fill-available;
+            }
+        }
+
+        /* --- Structural App Views --- */
+        .app-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .app-stage.active {
+            display: flex;
+        }
+
+        /* --- Phase 1: 3-Second Ignition Splash --- */
+        #splash-screen {
+            background: radial-gradient(circle at center, #070B1E 0%, #020308 100%);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .radar-ignition-ring {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(0, 240, 255, 0.7);
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0.3);
+            animation: radarIgnite 3s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .splash-logo {
+            font-size: 28px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #FFFFFF;
+            letter-spacing: 24px;
+            opacity: 0;
+            filter: blur(12px);
+            animation: textCompress 3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        @keyframes radarIgnite {
+            0% { opacity: 0; transform: scale(0.3); }
+            20% { opacity: 1; }
+            90% { opacity: 0.15; transform: scale(8); }
+            100% { opacity: 0; transform: scale(9); }
+        }
+
+        @keyframes textCompress {
+            0% { opacity: 0; filter: blur(12px); letter-spacing: 24px; }
+            75% { opacity: 1; filter: blur(0px); letter-spacing: 6px; }
+            94% { filter: brightness(3) drop-shadow(0 0 15px #00F0FF); }
+            100% { opacity: 1; letter-spacing: 6px; filter: brightness(1); }
+        }
+
+        /* --- Phase 2: Premium Identity Onboarding --- */
+        #identity-screen {
+            background: radial-gradient(circle at center, #060919 0%, #030409 100%);
+            padding: 40px;
+            justify-content: center;
+        }
+
+        .typewriter-title-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 60px;
+            height: 40px;
+        }
+
+        .premium-title {
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: #A0AEC0;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .blinking-cursor {
+            width: 2px;
+            height: 22px;
+            background-color: #00F0FF;
+            margin-left: 4px;
+            animation: pulseCursor 0.8s infinite alternate;
+            display: none;
+            box-shadow: 0 0 8px #00F0FF;
+        }
+
+        @keyframes pulseCursor {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .invisible-input-wrapper {
+            position: relative;
+            margin-bottom: 80px;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.6s ease-out;
+        }
+
+        .invisible-input-wrapper.reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .minimal-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 12px 4px;
+            font-size: 24px;
+            color: #FFFFFF;
+            font-weight: 400;
+            letter-spacing: 1px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .minimal-input:focus {
+            border-bottom-color: #00F0FF;
+        }
+
+        .floating-action-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 16px;
+            border-radius: 4px;
+            color: #FFFFFF;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        .floating-action-btn.reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .floating-action-btn.ready {
+            border-color: #00F0FF;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+            background: rgba(0, 240, 255, 0.02);
+        }
+
+        /* --- Phase 3: Mode Choice Integration --- */
+        #mode-select-screen {
+            background: #04050E;
+            padding: 40px 30px;
+            justify-content: center;
+        }
+
+        .section-header {
+            font-size: 16px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: #A0AEC0;
+            text-align: center;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+        }
+
+        .stack-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+
+        .tactical-plate {
+            background-color: #0D1024;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .tactical-plate:hover {
+            background-color: #121733;
+        }
+
+        .tactical-plate.selected {
+            border-color: #00F0FF;
+            box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.1), 0 4px 20px rgba(0, 0, 0, 0.4);
+            transform: scale(1.02);
+        }
+
+        .tactical-plate.dimmed {
+            opacity: 0.3;
+        }
+
+        .plate-icon {
+            font-size: 24px;
+            margin-right: 20px;
+            filter: grayscale(1);
+            transition: filter 0.3s ease;
+        }
+
+        .tactical-plate.selected .plate-icon {
+            filter: grayscale(0);
+        }
+
+        .plate-label {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #E2E8F0;
+        }
+
+        /* --- Phase 4: Main Command Console Framework --- */
+        #console-dashboard {
+            background-color: #04050E;
+            padding: 20px;
+        }
+
+        .global-system-header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .status-pill {
+            background-color: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #00F0FF;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Dynamic Segmented Selector Track */
+        .mode-selector-track {
+            background-color: #0D1024;
+            border-radius: 30px;
+            padding: 4px;
+            display: flex;
+            position: relative;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .track-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #718096;
+            z-index: 2;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .track-tab.active {
+            color: #FFFFFF;
+        }
+
+        .frosted-slider-pill {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(33.33% - 5px);
+            height: calc(100% - 8px);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 240, 255, 0.05) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            backdrop-filter: blur(8px);
+            border-radius: 26px;
+            z-index: 1;
+            transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Mode Module Layout Canvas Containers */
+        .mode-module {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            margin-bottom: 120px; /* Leave breathing space for floating assistant ring */
+        }
+
+        .mode-module.active {
+            display: flex;
+        }
+
+        /* Sensory Interaction Cards */
+        .sensory-card {
+            background-color: #0D1024;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-caption-line {
+            font-size: 11px;
+            font-weight: 500;
+            color: #718096;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        /* Blind Module: Audio Wave Layout */
+        .waveform-container {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wave-vector-line {
+            width: 100%;
+            height: 60px;
+        }
+
+        /* FIXED: Micro Embedded Spatial Tracking Map Container (Strictly Non-Fullscreen Card) */
+        .map-wrapper-box {
+            width: 100%;
+            height: 330px; 
+            border-radius: 6px;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            overflow: hidden;
+            position: relative;
+            z-index: 20;
+        }
+
+        #embedded-blind-map {
+            width: 100%;
+            height: 100%;
+            background-color: #070913;
+        }
+
+        /* Deaf Module: Haptic Hand Architecture Grid */
+        .haptic-matrix-view {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 280px;
+            position: relative;
+        }
+
+        .hand-vector-skeleton {
+            width: 200px;
+            height: 240px;
+            opacity: 0.15;
+            transition: opacity 0.5s ease;
+        }
+
+        .haptic-node-pulse {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #00F0FF;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #00F0FF;
+        }
+
+        /* Deaf Module: Audio Ambient Alerts */
+        .visual-alert-strip {
+            padding: 16px;
+            background-color: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #EF4444;
+            text-transform: uppercase;
+        }
+
+        /* Dumb Module: Speaker Broadcaster Control Plates */
+        .phrase-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .phrase-capsule {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            border-radius: 6px;
+            color: #E2E8F0;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .phrase-capsule:active {
+            border-color: #00F0FF;
+            background-color: rgba(0, 240, 255, 0.04);
+        }
+
+        /* --- Global Fixed Assistant Anchor Ring (The Portal) --- */
+        .assistant-portal-anchor {
+            position: absolute;
+            bottom: 35px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            pointer-events: none;
+        }
+
+        .aura-ring-portal {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #00F0FF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #04050E;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .aura-ring-portal.listening {
+            animation: restingPulse 2s infinite ease-in-out;
+        }
+
+        .aura-ring-portal.speaking {
+            animation: highActivityPulse 0.5s infinite alternate;
+            border-color: #FFFFFF;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+        }
+
+        .internal-core-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #00F0FF;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .aura-ring-portal.speaking .internal-core-dot {
+            background-color: #FFFFFF;
+        }
+
+        .portal-caption {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #00F0FF;
+            text-transform: uppercase;
+            margin-top: 12px;
+        }
+
+        @keyframes restingPulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+            50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(0, 240, 255, 0.5); border-color: rgba(0, 240, 255, 1); }
+            100% { transform: scale(1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+        }
+
+        @keyframes highActivityPulse {
+            0% { transform: scale(1.02); }
+            100% { transform: scale(1.15); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="device-container">
+
+        <!-- Phase 1: Splash Screen View -->
+        <div id="splash-screen" class="app-stage active">
+            <div class="radar-ignition-ring"></div>
+            <div class="splash-logo">Haptic Sense</div>
+        </div>
+
+        <!-- Phase 2: Name Input View -->
+        <div id="identity-screen" class="app-stage">
+            <div class="typewriter-title-container">
+                <span id="typewriter-target" class="premium-title"></span>
+                <div id="input-cursor" class="blinking-cursor"></div>
+            </div>
+            
+            <div id="input-capsule" class="invisible-input-wrapper">
+                <input type="text" id="username-field" class="minimal-input" autocomplete="off" spellcheck="false" placeholder="">
+            </div>
+
+            <button id="submit-name-btn" class="floating-action-btn">Continue</button>
+        </div>
+
+        <!-- Phase 3: Choose Mode View -->
+        <div id="mode-select-screen" class="app-stage">
+            <h2 class="section-header">Choose System Mode</h2>
+            
+            <div class="stack-container">
+                <div class="tactical-plate" data-mode="blind">
+                    <div class="plate-icon">🦯</div>
+                    <div class="plate-label">1. Blind Mode</div>
+                </div>
+                <div class="tactical-plate" data-mode="deaf">
+                    <div class="plate-icon">🧏</div>
+                    <div class="plate-label">2. Deaf Mode</div>
+                </div>
+                <div class="tactical-plate" data-mode="dumb">
+                    <div class="plate-icon">🗣️</div>
+                    <div class="plate-label">3. Dumb Mode</div>
+                </div>
+            </div>
+
+            <button id="initialize-engine-btn" class="floating-action-btn reveal">Initialize Engine</button>
+        </div>
+
+        <!-- Phase 4: System Console Core -->
+        <div id="console-dashboard" class="app-stage">
+            <div class="global-system-header">
+                <div class="status-pill">
+                    <span style="width: 6px; height: 6px; background-color: #00F0FF; border-radius: 50%;"></span>
+                    System Active
+                </div>
+            </div>
+
+            <!-- Segmented Control Slider Track -->
+            <div class="mode-selector-track">
+                <div class="frosted-slider-pill" id="slider-pill"></div>
+                <div class="track-tab active" data-target="blind">Blind</div>
+                <div class="track-tab" data-target="deaf">Deaf</div>
+                <div class="track-tab" data-target="dumb">Dumb</div>
+            </div>
+
+            <!-- Blind Module View -->
+            <div id="module-blind" class="mode-module active">
+                <div class="sensory-card">
+                    <div class="card-caption-line">Voice Engine Matrix</div>
+                    <div class="waveform-container">
+                        <svg class="wave-vector-line" viewBox="0 0 400 100" preserveAspectRatio="none">
+                            <path id="live-wave-path" d="M 0 50 Q 50 50, 100 50 T 200 50 T 300 50 T 400 50" fill="none" stroke="#00F0FF" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="sensory-card" style="padding: 10px;">
+                    <div class="card-caption-line" style="margin-left: 10px; margin-top: 5px;">Spatial Tracking Map</div>
+                    <!-- Rigid Non-Fullscreen Spatial Enclosure Frame -->
+                    <div class="map-wrapper-box">
+                        <div id="embedded-blind-map"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deaf Module View -->
+            <div id="module-deaf" class="mode-module">
+                <div class="sensory-card">
+                    <div class="card-caption-line">Haptic Node Matrix Feedback</div>
+                    <div class="haptic-matrix-view">
+                        <svg class="hand-vector-skeleton" viewBox="0 0 100 120" fill="none" stroke="#00F0FF" stroke-width="1">
+                            <path d="M20,80 Q15,50 25,30 Q30,25 35,35 L35,70 M38,70 L38,20 Q43,15 48,20 L48,70 M52,70 L52,15 Q57,10 62,15 L62,70 M66,70 L66,28 Q70,23 75,30 L72,80 M20,80 Q25,110 50,115 Q75,110 72,80" />
+                        </svg>
+                        <div class="haptic-node-pulse" style="top: 55px; left: 146px;"></div>
+                        <div class="haptic-node-pulse" style="top: 36px; left: 192px;"></div>
+                        <div class="haptic-node-pulse" style="top: 24px; left: 240px;"></div>
+                        <div class="haptic-node-pulse" style="top: 52px; left: 285px;"></div>
+                    </div>
+                </div>
+                <div class="visual-alert-strip" id="deaf-alert-strip">Monitoring Ambient Audio Environments</div>
+            </div>
+
+            <!-- Dumb Module View -->
+            <div id="module-dumb" class="mode-module">
+                <div class="sensory-card" style="flex: 1;">
+                    <div class="card-caption-line">Vocal Broadcaster Interface</div>
+                    <div class="phrase-grid">
+                        <button class="phrase-capsule" data-phrase="Emergency status active. Requesting immediate assistance.">1. Emergency Assistance</button>
+                        <button class="phrase-capsule" data-phrase="Clear the path forward. System navigation bypass required.">2. Clear Path Requested</button>
+                        <button class="phrase-capsule" data-phrase="System setup complete. Working perfectly.">3. System Check Nominal</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Global Continuous Voice Portal System -->
+        <div class="assistant-portal-anchor">
+            <div class="aura-ring-portal listening" id="voice-portal">
+                <div class="internal-core-dot"></div>
+            </div>
+            <div class="portal-caption" id="portal-status-text">Assistant Active</div>
+        </div>
+
+    </div>
+
+    <!-- Leaflet Mapping Engine Core Injections -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // --- Central System Data Storage State ---
+        const systemState = {
+            name: "Operator",
+            selectedMode: "blind",
+            isSpeaking: false,
+            mapInstance: null,
+            mapMarker: null,
+            animationFrame: null
+        };
+
+        // --- Premium Web Audio Terminal Click Synthesizer ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playDataStreamBeep() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        }
+
+        // --- Forced Masculine High-Resonance Voice Tuning Engine ---
+        function triggerSystemVoice(phraseText, isIntro = false) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(phraseText);
+                
+                utterance.volume = 1.0;
+                
+                // FIXED: Pacing rates significantly slowed down for absolute vocal clarity
+                utterance.rate = isIntro ? 0.76 : 0.82; 
+                
+                // FIXED: Deep, authoritative masculine resonance profile
+                utterance.pitch = 0.72; 
+
+                // Forced Masculine Core Filter Setup
+                const voices = window.speechSynthesis.getVoices();
+                const maleVoice = voices.find(v => 
+                    v.name.toLowerCase().includes('google uk english male') || 
+                    v.name.toLowerCase().includes('microsoft david') ||
+                    v.name.toLowerCase().includes('male') || 
+                    (v.lang.startsWith('en-') && v.name.toLowerCase().includes('david'))
+                );
+                
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                } else {
+                    const secondaryMale = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'));
+                    if (secondaryMale) utterance.voice = secondaryMale;
+                }
+
+                const portal = document.getElementById('voice-portal');
+                const statusTxt = document.getElementById('portal-status-text');
+
+                utterance.onstart = () => {
+                    systemState.isSpeaking = true;
+                    portal.className = "aura-ring-portal speaking";
+                    statusTxt.innerText = "Broadcasting";
+                    if (systemState.selectedMode === 'blind') startWaveformAnimation();
+                };
+
+                utterance.onend = () => {
+                    systemState.isSpeaking = false;
+                    portal.className = "aura-ring-portal listening";
+                    statusTxt.innerText = "Assistant Active";
+                    if (systemState.selectedMode === 'blind') stopWaveformAnimation();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- System Lifecycle Initialization Engine ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Unlock/Pre-compile browser audio synthesis tables
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+
+            // Fire introduction speech broadcast
+            setTimeout(() => {
+                triggerSystemVoice("Welcome to the world of haptic sense.", true);
+            }, 2200);
+
+            // Shift Stage from Splash into Identity Entry
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.remove('active');
+                document.getElementById('identity-screen').classList.add('active');
+                executeRapidTypewriter();
+            }, 3000);
+        });
+
+        // --- Identity Stage Terminal Typography Engine ---
+        function executeRapidTypewriter() {
+            const targetString = "ENTER THE NAME";
+            const targetContainer = document.getElementById('typewriter-target');
+            const cursor = document.getElementById('input-cursor');
+            let index = 0;
+
+            cursor.style.display = "inline-block";
+
+            function typeNextLetter() {
+                if (index < targetString.length) {
+                    targetContainer.textContent += targetString.charAt(index);
+                    playDataStreamBeep();
+                    index++;
+                    setTimeout(typeNextLetter, 75);
+                } else {
+                    document.getElementById('input-capsule').classList.add('reveal');
+                    document.getElementById('submit-name-btn').classList.add('reveal');
+                    document.getElementById('username-field').focus();
+                }
+            }
+            setTimeout(typeNextLetter, 400);
+        }
+
+        // --- User Entry Events ---
+        const usernameField = document.getElementById('username-field');
+        const submitNameBtn = document.getElementById('submit-name-btn');
+
+        usernameField.addEventListener('input', (e) => {
+            if (e.target.value.trim().length > 0) {
+                submitNameBtn.classList.add('ready');
+            } else {
+                submitNameBtn.classList.remove('ready');
+            }
+        });
+
+        submitNameBtn.addEventListener('click', () => {
+            if (usernameField.value.trim().length > 0) {
+                systemState.name = usernameField.value.trim();
+                document.getElementById('identity-screen').classList.remove('active');
+                document.getElementById('mode-select-screen').classList.add('active');
+            }
+        });
+
+        // --- Tactical Mode Selection Processing ---
+        const plates = document.querySelectorAll('.tactical-plate');
+        let selectedModeLocal = "blind";
+
+        plates.forEach(plate => {
+            plate.addEventListener('click', () => {
+                selectedModeLocal = plate.getAttribute('data-mode');
+                plates.forEach(p => {
+                    p.classList.remove('selected');
+                    p.classList.add('dimmed');
+                });
+                plate.classList.remove('dimmed');
+                plate.classList.add('selected');
+            });
+        });
+
+        // --- Main Engine Panel Activation Lifecycle ---
+        document.getElementById('initialize-engine-btn').addEventListener('click', () => {
+            systemState.selectedMode = selectedModeLocal;
+            
+            document.getElementById('mode-select-screen').classList.remove('active');
+            document.getElementById('console-dashboard').classList.add('active');
+
+            synchronizeDashboardTrack(systemState.selectedMode);
+            
+            if (systemState.selectedMode === 'blind') {
+                initializeGlobalMap();
+            }
+
+            setTimeout(() => {
+                triggerSystemVoice(`System active. Profile loaded. Welcome, ${systemState.name}.`, false);
+            }, 600);
+        });
+
+        // --- Segmented Sliding Layout Control Matrix ---
+        const tabs = document.querySelectorAll('.track-tab');
+        const sliderPill = document.getElementById('slider-pill');
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                const targetedMode = tab.getAttribute('data-target');
+                systemState.selectedMode = targetedMode;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.cmd = tab.classList.add('active');
+                
+                sliderPill.style.transform = `translateX(${index * 100}%)`;
+
+                document.querySelectorAll('.mode-module').forEach(m => m.classList.remove('active'));
+                document.getElementById(`module-${targetedMode}`).classList.add('active');
+
+                if (targetedMode === 'blind') {
+                    initializeGlobalMap();
+                    triggerSystemVoice("Blind navigation layout engaged.", false);
+                } else if (targetedMode === 'deaf') {
+                    triggerSystemVoice("Deaf system configurations monitoring.", false);
+                } else if (targetedMode === 'dumb') {
+                    triggerSystemVoice("Vocal assistance panels active.", false);
+                }
+            });
+        });
+
+        function synchronizeDashboardTrack(modeKey) {
+            const indexMap = { 'blind': 0, 'deaf': 1, 'dumb': 2 };
+            const index = indexMap[modeKey];
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            tabs[index].classList.add('active');
+            sliderPill.style.transform = `translateX(${index * 100}%)`;
+
+            document.querySelectorAll('.mode-module').forEach(m => m.classList.remove('active'));
+            document.getElementById(`module-${modeKey}`).classList.add('active');
+        }
+
+        // --- Dumb Mode Speaker Broadcasting Event Handles ---
+        document.querySelectorAll('.phrase-capsule').forEach(capsule => {
+            capsule.addEventListener('click', () => {
+                const sentence = capsule.getAttribute('data-phrase');
+                triggerSystemVoice(sentence, false);
+            });
+        });
+
+        // --- Non-Fullscreen Leaflet Map Canvas Setup (Blind Mode Exclusive) ---
+        function initializeGlobalMap() {
+            if (systemState.mapInstance) {
+                setTimeout(() => { systemState.mapInstance.invalidateSize(); }, 200);
+                return;
+            }
+
+            // Fixed safe geographic centering coordinates point
+            const targetLat = 17.6868;
+            const targetLng = 83.2185;
+
+            // Render map inside wrapper layout bounds safely
+            systemState.mapInstance = L.map('embedded-blind-map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([targetLat, targetLng], 15);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20
+            }).addTo(systemState.mapInstance);
+
+            const pulseIcon = L.divIcon({
+                className: 'custom-pulsing-gps-icon',
+                html: `<div style="width:14px; height:14px; background-color:#00F0FF; border-radius:50%; border:2px solid #fff; box-shadow:0 0 10px #00F0FF;"></div>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+
+            systemState.mapMarker = L.marker([targetLat, targetLng], { icon: pulseIcon }).addTo(systemState.mapInstance);
+            
+            // Re-verify wrapper boundary limits safely right after canvas initialization finishes
+            setTimeout(() => { systemState.mapInstance.invalidateSize(); }, 250);
+        }
+
+        // --- Fluid Sound Frequency Waveform Mechanics Loops ---
+        const wavePath = document.getElementById('live-wave-path');
+        let wavePhase = 0;
+
+        function animateWaveformLoop() {
+            if (!systemState.isSpeaking) return;
+
+            let points = [];
+            for (let x = 0; x <= 400; x += 10) {
+                const amplitude = 22 * Math.sin((x * 0.03) + wavePhase);
+                const y = 50 + amplitude * Math.sin(x * 0.01);
+                points.push(`${x} ${y}`);
+            }
+
+            wavePath.setAttribute('d', `M 0 50 Q ${points.join(' T ')}`);
+            wavePhase += 0.25;
+            systemState.animationFrame = requestAnimationFrame(animateWaveformLoop);
+        }
+
+        function startWaveformAnimation() {
+            if (!systemState.animationFrame) animateWaveformLoop();
+        }
+
+        function stopWaveformAnimation() {
+            cancelAnimationFrame(systemState.animationFrame);
+            systemState.animationFrame = null;
+            wavePath.setAttribute('d', "M 0 50 Q 50 50, 100 50 T 200 50 T 300 50 T 400 50");
+        }
+    </script>
+</body>
+</html>
