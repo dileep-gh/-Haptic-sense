@@ -3,290 +3,475 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haptic Sense | Assistive System Suite</title>
-    <link rel="manifest" href="manifest.json">
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-          .then(() => console.log("Haptic Sense PWA Registered"))
-          .catch(err => console.error("Registration Failed", err));
-      }
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <title>Haptic Sense</title>
+    <!-- Leaflet CSS for mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        #embedded-map { height: 340px; width: 100%; z-index: 10; }
-        .leaflet-routing-container { display: none !important; }
-        .smooth-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* High-Contrast Premium Accessibility Palette */
+        :root {
+            --bg-canvas: #0B0D17;       /* Deep Obsidian Midnight */
+            --bg-tile: #16192B;         /* Rich Slate Blue */
+            --text-main: #FFFFFF;       /* Pure White High Contrast */
+            --accent-action: #3B82F6;   /* Solid Clear Blue Accent */
+            --border-crisp: #2E3556;    /* Highly Visible Boundary Line */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ⏱️ Phase 1: 2-Second Launch Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-canvas);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+
+        .splash-logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            opacity: 0;
+            transform: scale(0.95);
+            animation: fadeInLogo 1.2s forwards ease-out 0.2s;
+        }
+
+        @keyframes fadeInLogo {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 📱 Phase 2: Main Application Dashboard */
+        #app-dashboard {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px 0 25px 0;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Massive Touch Targets / Blocks */
+        .accessible-card {
+            background-color: var(--bg-tile);
+            border: 3px solid var(--border-crisp);
+            border-radius: 16px;
+            padding: 24px;
+            color: var(--text-main);
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .accessible-card:active {
+            transform: scale(0.98);
+            background-color: var(--border-crisp);
+        }
+
+        /* Specific Button Custom Named: Map View */
+        #map-view-btn {
+            border: 3px solid var(--accent-action);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .mode-row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .mode-row .accessible-card {
+            flex: 1;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px 10px;
+        }
+
+        /* Live Text Status Subtitle Box */
+        #status-box {
+            background-color: var(--bg-tile);
+            border: 2px dashed var(--border-crisp);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1rem;
+            color: #A0AEC0;
+            text-align: center;
+            margin-top: auto;
+            font-weight: 500;
+        }
+
+        /* Core Action Floating Sonic Mic Orb */
+        .mic-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        #mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--accent-action);
+            border: 4px solid var(--text-main);
+            color: var(--text-main);
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+            transition: transform 0.1s;
+        }
+
+        #mic-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Dynamic Mic Listening Pulse Animation */
+        #mic-btn.listening {
+            animation: pulseMic 1.2s infinite cubic-bezier(0.66, 0, 0, 1);
+            background-color: #EF4444; /* Alert red color changes cleanly when active */
+        }
+
+        @keyframes pulseMic {
+            to {
+                box-shadow: 0 0 0 25px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* 🗺️ Phase 3: Active Map View Edge-To-Edge Overlay */
+        #map-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5000;
+            background-color: #000;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            visibility: hidden;
+        }
+
+        #map-overlay.active {
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Semi-Transparent Floating Exit Target */
+        #close-map-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 6000;
+            background-color: rgba(11, 13, 23, 0.85);
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #close-map-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
-<body id="app-body" class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-6 smooth-transition">
-    <header class="max-w-md w-full mx-auto flex flex-col items-center justify-center my-3">
-        <div class="w-full flex items-center justify-between h-14 relative">
-            <button id="back-btn" onclick="showHome()" class="hidden absolute left-0 bg-slate-900/90 backdrop-blur border border-slate-800 text-slate-200 px-4 py-2 rounded-2xl text-sm font-bold flex items-center gap-2 active:scale-95 transition-all hover:bg-slate-800">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
-            </button>
-            <img src="logo.png" alt="Haptic Sense Logo" class="h-12 w-auto mx-auto drop-shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-        </div>
-        <p id="app-quote" class="text-xs text-slate-400 mt-1 tracking-widest uppercase opacity-70">Touch · Sense · Connect</p>
-    </header>
-    <div class="max-w-md w-full mx-auto mb-4">
-        <button onclick="toggleGlobalVoiceListening()" id="global-mic-bar" class="w-full bg-slate-900/60 backdrop-blur border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between active:scale-[0.99] hover:border-slate-700 transition-all shadow-lg shadow-black/40">
-            <div class="flex items-center gap-3">
-                <span class="relative flex h-3 w-3">
-                    <span id="mic-dot-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span id="mic-dot" class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                </span>
-                <span id="global-mic-text" class="text-sm font-semibold text-slate-300">Tap to Start Universal Voice Mode</span>
-            </div>
-            <div class="bg-slate-800 p-2 rounded-xl"><i data-lucide="mic" id="mic-bar-icon" class="w-4 h-4 text-blue-400"></i></div>
-        </button>
+<body>
+
+    <!-- ⏱️ Phase 1: Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-logo">HAPTIC SENSE</div>
     </div>
-    <main class="flex-grow flex flex-col justify-center max-w-md w-full mx-auto my-auto z-10">
-        <div id="home-view" class="space-y-4 w-full">
-            <button onclick="openPlatform('blind')" class="w-full bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-3xl p-6 flex items-center justify-between gap-4 transition-all shadow-xl shadow-blue-950/20 group active:scale-95">
-                <div class="flex flex-col text-left"><span class="text-2xl font-black tracking-wide uppercase">BLIND MODE</span><span class="text-xs text-blue-100/70 mt-1">Voice Route Navigation Map</span></div>
-                <div class="bg-white/10 p-4 rounded-2xl backdrop-blur group-hover:scale-110 transition-transform"><i data-lucide="eye" class="w-8 h-8 text-white"></i></div>
+
+    <!-- 📱 Phase 2: Main Dashboard Grid -->
+    <div id="app-dashboard">
+        <header>
+            <h1>HAPTIC SENSE</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- Named exactly: Map View -->
+            <button class="accessible-card" id="map-view-btn" onclick="openMapView()">
+                <span>🗺️</span> <span>MAP VIEW</span>
             </button>
-            <button onclick="openPlatform('deaf')" class="w-full bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white rounded-3xl p-6 flex items-center justify-between gap-4 transition-all shadow-xl shadow-emerald-950/20 group active:scale-95">
-                <div class="flex flex-col text-left"><span class="text-2xl font-black tracking-wide uppercase">DEAF MODE</span><span class="text-xs text-emerald-100/70 mt-1">Environmental Audio Guard</span></div>
-                <div class="bg-white/10 p-4 rounded-2xl backdrop-blur group-hover:scale-110 transition-transform"><i data-lucide="ear" class="w-8 h-8 text-white"></i></div>
-            </button>
-            <button onclick="openPlatform('dumb')" class="w-full bg-gradient-to-br from-orange-600 to-amber-700 hover:from-orange-500 hover:to-amber-600 text-white rounded-3xl p-6 flex items-center justify-between gap-4 transition-all shadow-xl shadow-orange-950/20 group active:scale-95">
-                <div class="flex flex-col text-left"><span class="text-2xl font-black tracking-wide uppercase">DUMB MODE</span><span class="text-xs text-orange-100/70 mt-1">Tactile Sound Broadcast boards</span></div>
-                <div class="bg-white/10 p-4 rounded-2xl backdrop-blur group-hover:scale-110 transition-transform"><i data-lucide="smile" class="w-8 h-8 text-white"></i></div>
-            </button>
-        </div>
-        <div id="blind-view" class="hidden space-y-4 w-full">
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
-                <div id="embedded-map" class="bg-slate-950 flex items-center justify-center text-slate-500 text-xs font-semibold tracking-wider uppercase animate-pulse">Acquiring satellite road configurations...</div>
+
+            <div class="mode-row">
+                <button class="accessible-card" onclick="setMode('blind')">
+                    <span>🦯</span><span>BLIND MODE</span>
+                </button>
+                <button class="accessible-card" onclick="setMode('deaf')">
+                    <span>🧏</span><span>DEAF MODE</span>
+                </button>
             </div>
-            <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                <div class="flex items-center gap-2 text-blue-400 mb-2 text-xs font-bold uppercase tracking-widest"><i data-lucide="navigation" class="w-3.5 h-3.5 animate-bounce"></i><span>Live Road Track Guidance Stream</span></div>
-                <p id="nav-status" class="text-sm font-medium text-slate-300 leading-relaxed">Ready for commands. Say: <span class="text-blue-400 italic">"Guide me to 3rd Street"</span> or ask any question.</p>
+
+            <div id="status-box">System Initializing Framework...</div>
+
+            <div class="mic-container">
+                <button id="mic-btn" onclick="toggleVoiceInput()">🎤</button>
             </div>
         </div>
-        <div id="deaf-view" class="hidden space-y-4 w-full">
-            <div id="mic-box" class="bg-slate-900 border border-slate-800 p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl smooth-transition">
-                <div class="bg-emerald-500/10 p-5 rounded-full mb-4 border border-emerald-500/20"><i data-lucide="mic" id="mic-icon" class="w-10 h-10 text-emerald-400 smooth-transition"></i></div>
-                <h3 id="mic-status-title" class="text-lg font-bold tracking-wide text-slate-100 uppercase">Decibel Environment Stream</h3>
-                <p id="mic-status-desc" class="text-xs text-slate-400 max-w-xs mt-2 leading-relaxed">Monitoring environmental audio waves for noise danger spikes.</p>
-            </div>
-        </div>
-        <div id="dumb-view" class="hidden space-y-4 w-full">
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="speakAndVibrate('Yes.', [80])" class="bg-emerald-600/90 hover:bg-emerald-600 py-8 rounded-2xl flex flex-col items-center justify-center font-black text-2xl tracking-wider shadow-lg active:scale-95 transition-all border border-emerald-500/30"><i data-lucide="check" class="w-6 h-6 mb-2 text-emerald-200"></i> YES</button>
-                <button onclick="speakAndVibrate('No.', [180])" class="bg-red-600/90 hover:bg-red-600 py-8 rounded-2xl flex flex-col items-center justify-center font-black text-2xl tracking-wider shadow-lg active:scale-95 transition-all border border-red-500/30"><i data-lucide="x" class="w-6 h-6 mb-2 text-red-200"></i> NO</button>
-            </div>
-            <button onclick="speakAndVibrate('Excuse me. I cannot speak. Please look at my screen for assistance.', [500, 150, 500, 150])" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold p-5 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.99] transition-all shadow-lg shadow-orange-950/20"><i data-lucide="megaphone" class="w-5 h-5"></i><span class="tracking-wider uppercase text-sm">BROADCAST VOICE ALERT</span></button>
-        </div>
-    </main>
-    <footer class="max-w-md w-full mx-auto text-center text-[10px] text-slate-600 font-bold tracking-widest uppercase my-4">Haptic Sense · Adaptive Assistive Environment</footer>
-    
+    </div>
+
+    <!-- 🗺️ Phase 3: Immersive Full Map Canvas Overlay -->
+    <div id="map-overlay">
+        <button id="close-map-btn" onclick="closeMapView()">✕ Close</button>
+        <div id="map-canvas"></div>
+    </div>
+
+    <!-- Leaflet JS Map Script Engine -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
-        lucide.createIcons();
-        let audioContext, analyser, microphone, javascriptNode, micStream;
-        let mapInstance = null, routingControlInstance = null, currentLat = 0, currentLon = 0;
-        let isGlobalListening = false, isDangerAlertActive = false;
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let globalRecognition = null;
-        
-        if (SpeechRecognition) {
-            globalRecognition = new SpeechRecognition();
-            globalRecognition.continuous = true;
-            globalRecognition.lang = 'en-US';
-            globalRecognition.interimResults = false;
-        }
+        let map = null;
+        let recognition = null;
+        let activeMode = 'normal';
 
-        function toggleGlobalVoiceListening() {
-            if (!globalRecognition) { speakAndVibrate("Speech engine not supported on this specific web browser configuration."); return; }
-            const barText = document.getElementById('global-mic-text'), dot = document.getElementById('mic-dot'), dotPulse = document.getElementById('mic-dot-pulse'), micIcon = document.getElementById('mic-bar-icon');
-            if (!isGlobalListening) {
-                try {
-                    globalRecognition.start(); isGlobalListening = true;
-                    barText.innerText = "Listening universally... Speak freely now.";
-                    dot.className = "relative inline-flex rounded-full h-3 w-3 bg-red-500";
-                    dotPulse.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75";
-                    micIcon.className = "w-4 h-4 text-red-400";
-                    speakAndVibrate("Universal assistant mode active. How can I help you?", [60]);
-                } catch(e) { console.error(e); }
-            } else {
-                globalRecognition.stop(); isGlobalListening = false;
-                barText.innerText = "Tap to Start Universal Voice Mode";
-                dot.className = "relative inline-flex rounded-full h-3 w-3 bg-blue-500";
-                dotPulse.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75";
-                micIcon.className = "w-4 h-4 text-blue-400";
-                speakAndVibrate("Voice engine standby.", [60]);
+        // Initialize Launch Sequence
+        window.addEventListener('DOMContentLoaded', () => {
+            // Setup voice recognition loop safely if available in device browser
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const resultText = event.results[0][0].transcript;
+                    updateStatus(`Heard: "${resultText}"`);
+                    handleVoicePipeline(resultText);
+                };
+
+                recognition.onerror = () => {
+                    updateStatus("Voice matching idle...");
+                    document.getElementById('mic-btn').classList.remove('listening');
+                };
+
+                recognition.onend = () => {
+                    document.getElementById('mic-btn').classList.remove('listening');
+                };
             }
-        }
 
-        /* --- THE NEW SMART ASSISTANT ENGINE --- */
-        if (globalRecognition) {
-            globalRecognition.onresult = function(event) {
-                const lastIndex = event.results.length - 1;
-                const spokenText = event.results[lastIndex][0].transcript.toLowerCase().trim();
+            // Execute the 2-Second transition block
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                const dashboard = document.getElementById('app-dashboard');
                 
-                if (spokenText.includes("open blind") || spokenText.includes("blind mode") || spokenText.includes("show map") || spokenText.includes("open map")) { 
-                    openPlatform('blind'); 
-                    speakAndVibrate("Opening blind mode navigational map interface.");
-                } 
-                else if (spokenText.includes("open deaf") || spokenText.includes("deaf mode") || spokenText.includes("sound guard")) { 
-                    openPlatform('deaf'); 
-                    speakAndVibrate("Activating deaf mode environmental sound guard.");
-                } 
-                else if (spokenText.includes("open dumb") || spokenText.includes("dumb mode") || spokenText.includes("speech board")) { 
-                    openPlatform('dumb'); 
-                    speakAndVibrate("Launching dumb mode tactile speech matrix.");
-                } 
-                else if (spokenText.includes("go home") || spokenText.includes("main menu") || spokenText.includes("back") || spokenText.includes("close")) { 
-                    showHome(); 
-                } 
-                else if (spokenText.includes("guide me to") || spokenText.includes("route to") || spokenText.includes("navigate to")) {
-                    openPlatform('blind');
-                    let targetStreet = "3rd Street";
-                    if (spokenText.includes("guide me to")) targetStreet = spokenText.split("guide me to")[1].trim();
-                    else if (spokenText.includes("route to")) targetStreet = spokenText.split("route to")[1].trim();
-                    else if (spokenText.includes("navigate to")) targetStreet = spokenText.split("navigate to")[1].trim();
-                    calculateRealRoadTrack(targetStreet);
-                } 
-                else { 
-                    processUniversalQueries(spokenText); 
-                }
-            };
-            globalRecognition.onerror = function() { if(isGlobalListening) { try { globalRecognition.start(); } catch(e){} } };
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                dashboard.style.opacity = '1';
+                
+                updateStatus("System Ready.");
+                speakPremiumWelcome();
+            }, 2000);
+        });
+
+        // High-Quality Optimized Audio Voice Engine
+        function speakPremiumWelcome() {
+            if ('speechSynthesis' in window) {
+                const text = "Welcome to the world of Haptic Sense.";
+                const utterance = new SpeechSynthesisUtterance(text);
+                const voices = window.speechSynthesis.getVoices();
+                
+                // Prioritize advanced system voice models
+                const premiumVoice = voices.find(voice => 
+                    voice.name.includes("Google US English") || 
+                    voice.name.includes("Samantha") || 
+                    voice.name.includes("Natural") ||
+                    voice.lang === "en-US"
+                );
+                
+                if (premiumVoice) utterance.voice = premiumVoice;
+                utterance.rate = 0.95; // Crisp, slower, high-end rhythmic cadence
+                utterance.pitch = 1.0;
+                
+                window.speechSynthesis.speak(utterance);
+            }
         }
 
-        function processUniversalQueries(query) {
-            if (query.includes('time') || query.includes('clock')) { 
-                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
-                speakAndVibrate(`The current time is ${timeStr}.`); 
-            } 
-            else if (query.includes('weather') || query.includes('temperature')) { 
-                speakAndVibrate("The local reading is 28 degrees Celsius with clear skies here in Visakhapatnam."); 
-            } 
-            else if (query.includes('help') || query.includes('emergency')) { 
-                speakAndVibrate("Emergency protocol engaged. Transmitting real-time location coordinates to your emergency contacts.", [500, 100, 500]); 
-            } 
-            else if (query.includes('hello') || query.includes('hey') || query.includes('hi')) { 
-                speakAndVibrate("Hello there! Haptic Sense environment assistant online. What can I do for you?"); 
-            }
-            else if (query.includes('your name') || query.includes('who are you')) {
-                speakAndVibrate("I am the Haptic Sense integrated speech utility assistant, built to handle environmental accessibility commands.");
-            }
-            else if (query.includes('joke')) {
-                speakAndVibrate("Why don't scientists trust atoms? Because they make up everything!");
-            }
-            else { 
-                const fallbacks = [
-                    `I heard you say: "${query}". I am monitoring this environment space, let me know if you need me to open a layout module.`,
-                    `Processing request for: "${query}". That data stream is completely stable and clear.`,
-                    `Understood. I have flagged your phrase regarding "${query}" inside the local session index.`
-                ];
-                const randomResponse = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-                speakAndVibrate(randomResponse); 
+        function speakOutput(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop tracking previous audio
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
             }
         }
-        /* -------------------------------------- */
 
-        function calculateRealRoadTrack(destinationName) {
-            document.getElementById('nav-status').innerText = `Plotting road map track to: ${destinationName.toUpperCase()}`;
-            if (currentLat === 0) { currentLat = 17.74; currentLon = 83.34; }
-            const targetLat = currentLat + 0.005, targetLon = currentLon + 0.005;
-            if (routingControlInstance !== null) { mapInstance.removeControl(routingControlInstance); }
-            routingControlInstance = L.Routing.control({
-                waypoints: [L.latLng(currentLat, currentLon), L.latLng(targetLat, targetLon)],
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-                lineOptions: { styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }] },
-                addWaypoints: false, draggableWaypoints: false
-            }).addTo(mapInstance);
-            routingControlInstance.on('routeselected', function(e) {
-                const instructions = e.route.instructions;
-                if (instructions && instructions.length > 0) {
-                    const firstRoadInstruction = instructions[0].text;
-                    document.getElementById('nav-status').innerHTML = `Road Track: <span class="text-blue-400 font-bold">${firstRoadInstruction}</span>. Target: ${destinationName}`;
-                    speakAndVibrate(`Route calculated along city streets. ${firstRoadInstruction} toward ${destinationName}.`, [200, 50, 200]);
+        // Dashboard Status Update Panel Utility
+        function updateStatus(text) {
+            document.getElementById('status-box').innerText = text;
+        }
+
+        // Accessibility Profile Controls
+        function setMode(mode) {
+            activeMode = mode;
+            const msg = `${mode.toUpperCase()} MODE ACTIVATED`;
+            updateStatus(msg);
+            speakOutput(msg);
+        }
+
+        // Immersive Map Overlay Logic Engine
+        function openMapView() {
+            const overlay = document.getElementById('map-overlay');
+            overlay.classList.add('active');
+            updateStatus("Displaying dynamic map coordinates...");
+
+            // Deferred Map Canvas Mounting to preserve processing memory
+            setTimeout(() => {
+                if (!map) {
+                    // Default centering on a standard global tracking position
+                    map = L.map('map-canvas', { zoomControl: false }).setView([17.6868, 83.2185], 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap parameters'
+                    }).addTo(map);
                 }
-            });
+                // Try fetching live GPS telemetry coordinates instantly
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        map.setView([lat, lon], 15);
+                        
+                        // Clear previous markers, plot clean high-contrast pin
+                        L.marker([lat, lon]).addTo(map).bindPopup('You are here.').openPopup();
+                    }, () => {
+                        updateStatus("GPS Signal limited. Using base telemetry.");
+                    });
+                }
+            }, 400);
         }
-        
-        function openPlatform(mode) {
-            document.getElementById('home-view').classList.add('hidden'); document.getElementById('back-btn').classList.remove('hidden'); document.getElementById('app-quote').classList.add('hidden');
-            document.getElementById('blind-view').classList.add('hidden'); document.getElementById('deaf-view').classList.add('hidden'); document.getElementById('dumb-view').classList.add('hidden');
-            const mainTitle = document.getElementById('app-title');
-            if(mode === 'blind') { mainTitle.innerText = "BLIND MODE"; document.getElementById('blind-view').classList.remove('hidden'); initEmbeddedMap(); } 
-            else if(mode === 'deaf') { mainTitle.innerText = "DEAF MODE"; document.getElementById('deaf-view').classList.remove('hidden'); initLiveMicSoundDetector(); } 
-            else if(mode === 'dumb') { mainTitle.innerText = "DUMB MODE"; document.getElementById('dumb-view').classList.remove('hidden'); }
+
+        function closeMapView() {
+            document.getElementById('map-overlay').classList.remove('active');
+            updateStatus("System Ready.");
         }
-        
-        function showHome() {
-            document.getElementById('home-view').classList.remove('hidden'); document.getElementById('blind-view').classList.add('hidden'); document.getElementById('deaf-view').classList.add('hidden');
-            document.getElementById('dumb-view').classList.add('hidden'); document.getElementById('back-btn').classList.add('hidden'); document.getElementById('app-quote').classList.remove('hidden');
-            document.getElementById('app-title').innerText = "HAPTIC SENSE";
-            if (micStream) { micStream.getTracks().forEach(track => track.stop()); }
-            resetAlertUI();
-            if (routingControlInstance !== null && mapInstance !== null) { mapInstance.removeControl(routingControlInstance); routingControlInstance = null; }
-            speakAndVibrate("Returned to Home Menu", [50]);
-        }
-        
-        function initEmbeddedMap() {
-            if (mapInstance !== null) return;
-            document.getElementById('embedded-map').innerHTML = "";
-            const renderMap = (lat, lon) => {
-                mapInstance = L.map('embedded-map', {zoomControl: false}).setView([lat, lon], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapInstance);
-                L.marker([lat, lon]).addTo(mapInstance);
-            };
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    currentLat = position.coords.latitude; currentLon = position.coords.longitude; renderMap(currentLat, currentLon);
-                }, function() { currentLat = 17.74; currentLon = 83.34; renderMap(currentLat, currentLon); });
-            } else { currentLat = 17.74; currentLon = 83.34; renderMap(currentLat, currentLon); }
-        }
-        
-        function initLiveMicSoundDetector() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-                    micStream = stream; audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    analyser = audioContext.createAnalyser(); microphone = audioContext.createMediaStreamSource(stream);
-                    javascriptNode = audioContext.createScriptProcessor(2048, 1, 1); analyser.smoothingTimeConstant = 0.8;
-                    microphone.connect(analyser); analyser.connect(javascriptNode); javascriptNode.connect(audioContext.destination);
-                    javascriptNode.onaudioprocess = function() {
-                        if (isDangerAlertActive) return;
-                        const array = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(array);
-                        let values = 0; for (let i = 0; i < array.length; i++) { values += array[i]; }
-                        if ((values / array.length) > 45) { triggerDangerAlertUI(); }
-                    }
-                }).catch(err => console.warn("Microphone permission denied."));
+
+        // Sonic Voice Capture Interface Trigger
+        function toggleVoiceInput() {
+            if (!recognition) {
+                updateStatus("Voice matching unsupported on this device profile.");
+                return;
+            }
+            const micBtn = document.getElementById('mic-btn');
+            if (micBtn.classList.contains('listening')) {
+                recognition.stop();
+            } else {
+                micBtn.classList.add('listening');
+                updateStatus("Listening for commands or questions...");
+                recognition.start();
             }
         }
-        
-        let alertTimeout;
-        function triggerDangerAlertUI() {
-            isDangerAlertActive = true;
-            if ('vibrate' in navigator) { navigator.vibrate([200, 100, 200]); }
-            document.getElementById('app-body').className = "bg-red-950 text-white min-h-screen flex flex-col justify-between p-4 md:p-6 transition-colors duration-100";
-            document.getElementById('mic-box').className = "bg-red-900/40 border-2 border-white/60 p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl";
-            document.getElementById('mic-icon').className = "w-10 h-10 text-white animate-ping";
-            clearTimeout(alertTimeout); alertTimeout = setTimeout(resetAlertUI, 2500);
-        }
-        
-        function resetAlertUI() {
-            const body = document.getElementById('app-body'); if (body) body.className = "bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-6 transition-colors duration-300";
-            const micBox = document.getElementById('mic-box');
-            if(micBox) { micBox.className = "bg-slate-900 border border-slate-800 p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl"; document.getElementById('mic-icon').className = "w-10 h-10 text-emerald-400"; }
-            isDangerAlertActive = false;
-        }
-        
-        function speakAndVibrate(message, pattern = [100]) {
-            if ('vibrate' in navigator) { navigator.vibrate(pattern); }
-            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(message); window.speechSynthesis.speak(utterance); }
+
+        // Smart Hybrid Local / AI Gateway Script Check
+        function handleVoicePipeline(phrase) {
+            const cleanPhrase = phrase.toLowerCase().trim();
+
+            // 1. Layer 1: The Local System Commands Check (Priority execution)
+            if (cleanPhrase.includes("open map") || cleanPhrase.includes("map view") || cleanPhrase.includes("route")) {
+                speakOutput("Opening Map View dashboard layout.");
+                openMapView();
+                return;
+            }
+            if (cleanPhrase.includes("close map") || cleanPhrase.includes("exit map")) {
+                speakOutput("Closing Map layout.");
+                closeMapView();
+                return;
+            }
+            if (cleanPhrase.includes("blind mode")) {
+                setMode('blind');
+                return;
+            }
+            if (cleanPhrase.includes("deaf mode")) {
+                setMode('deaf');
+                return;
+            }
+
+            // 2. Layer 2: Cloud AI Brain Framework Fallback
+            updateStatus("Querying Connected AI Brain...");
+            
+            /* 
+               🔌 DEV NOTE INTEGRATION PIPELINE:
+               To make this actively communicate over the live internet web cloud,
+               fetch your free developer API key and drop an endpoint route call right here:
+               
+               fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY`, {
+                   method: "POST",
+                   headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ contents: [{ parts: [{ text: cleanPhrase }] }] })
+               })
+               .then(res => res.json())
+               .then(data => {
+                   let aiAnswer = data.candidates[0].content.parts[0].text;
+                   speakOutput(aiAnswer);
+                   updateStatus(aiAnswer);
+               });
+            */
+            
+            // Temporary high-fidelity baseline framework response simulating live loop connection
+            setTimeout(() => {
+                const simulatedAiResponse = `I processed your request regarding "${phrase}". Please complete the API connection loop setup in the backend config to stream full answers directly here!`;
+                updateStatus(simulatedAiResponse);
+                speakOutput("Processing complete.");
+            }, 1000);
         }
     </script>
 </body>
