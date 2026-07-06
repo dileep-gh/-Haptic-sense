@@ -456,17 +456,17 @@
         }
 
         // Initialize Core System Settings Immediately on Document Ready Execution
-        window.addEventListener('DOMContentLoaded', () => {
-            window.speechSynthesis.getVoices();
-            initVoiceEarEngine();
-            setupInputListeners();
-            setupDashboardActions();
-            
-            // Auto voice invocation right at launch track parameters
-            setTimeout(() => {
-                speak("Welcome to Haptic Sense. Please speak or type your name.");
-            }, 800);
-        });
+        // TO THIS:
+window.addEventListener('DOMContentLoaded', () => {
+    window.speechSynthesis.getVoices();
+    initVoiceEarEngine();
+    setupInputListeners();
+    setupDashboardActions();
+    
+    setTimeout(() => {
+        speak("Welcome to the world of haptic sense. Please speak or type your name.");
+    }, 800);
+});
 
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
