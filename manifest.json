@@ -1,18 +1,22 @@
 {
   "name": "Haptic Sense",
-  "short_name": "HapticSense",
-  "description": "Adaptive Assistive Environment for diverse accessibility requirements.",
+  "short_name": "Haptic Sense",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#020617",
-  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/702/702132.png",
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
