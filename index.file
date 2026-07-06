@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haptic Sense</title>
+    <!-- Leaflet CSS for mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* 🎨 Premium Cyber-Tactical Core Palette */
+        :root {
+            --bg-canvas: #04050E;      /* Ultimate Deep Midnight Black */
+            --bg-card: #0D1024;        /* Solid Mechanical Plate Slate */
+            --border-glow: #1C234C;    /* Sharp Hardware Framing Line */
+            --text-pure: #FFFFFF;      /* High Contrast Absolute White */
+            --text-cyber: #00F0FF;     /* Tactical Laser Cyan */
+            --text-muted: #5F6D8A;     /* Muted Label Gray */
+            --accent-red: #FF3333;     /* Active Alert Crimson */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            /* 📱 Premium iPhone Font Stack Allocation */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            letter-spacing: -0.2px;
+        }
+
+        body {
+            background-color: #010205;
+            color: var(--text-pure);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* High-End Device Simulator Wrapper Frame */
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            height: 100vh;
+            background-color: var(--bg-canvas);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        @media (min-width: 440px) {
+            .app-container {
+                height: 850px;
+                border-radius: 40px;
+                border: 10px solid #161824;
+                box-shadow: 0 35px 80px rgba(0, 0, 0, 0.9);
+                overflow: hidden;
+            }
+        }
+
+        /* 📋 Global Screen Management Framework Layout */
+        .app-view-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-canvas);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 32px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+        }
+
+        .app-view-stage.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ⏱️ PREMIUM 3-SECOND SYSTEM IGNITION ANIMATION STAGE */
+        #splash-screen {
+            z-index: 1000;
+            background-color: #020308;
+            overflow: hidden;
+        }
+
+        /* Biometric Scanning Radar Ring Asset */
+        .biometric-scanner-ring {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 240, 255, 0.6);
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0.5);
+            animation: radarIgnition 3s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
+
+        /* Kinetic Compression iPhone Typography Animation */
+        .splash-logo {
+            font-size: 2.1rem;
+            font-weight: 900;
+            color: var(--text-pure);
+            text-transform: uppercase;
+            letter-spacing: 24px;
+            opacity: 0;
+            filter: blur(10px);
+            transform: scale(1.1);
+            animation: textCompression 3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes radarIgnition {
+            0% { opacity: 0; transform: scale(0.3); filter: blur(0px); }
+            30% { opacity: 1; filter: blur(2px); }
+            60% { border-color: var(--text-pure); }
+            95% { opacity: 0.1; transform: scale(7); filter: blur(8px); }
+            100% { opacity: 0; transform: scale(8); }
+        }
+
+        @keyframes textCompression {
+            0% { opacity: 0; filter: blur(12px); letter-spacing: 28px; transform: scale(1.1); }
+            40% { opacity: 0.3; filter: blur(6px); }
+            85% { opacity: 1; filter: blur(0px); letter-spacing: 5px; transform: scale(1); }
+            94% { filter: brightness(1); }
+            96% { filter: brightness(3) drop-shadow(0 0 10px #fff); } /* Ready-Flash Glitch */
+            100% { opacity: 1; filter: blur(0px); letter-spacing: 5px; transform: scale(1); }
+        }
+
+        /* 👤 Onboarding Interface Layout Styling Components */
+        .setup-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 32px;
+            text-align: center;
+            color: var(--text-pure);
+        }
+
+        .setup-input-field {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 18px 24px;
+            color: var(--text-pure);
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 35px;
+        }
+
+        .setup-input-field:focus {
+            border-color: var(--text-cyber);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+
+        .action-submit-btn {
+            width: 100%;
+            background-color: var(--text-pure);
+            color: #000000;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 0;
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .action-submit-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Mode Selection Calibration Layout Grid */
+        .selection-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .tactical-choice-plate {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            color: var(--text-pure);
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .tactical-choice-plate:active, .tactical-choice-plate.selected {
+            border-color: var(--text-cyber);
+            background-color: rgba(0, 240, 255, 0.04);
+        }
+
+        .plate-glyph {
+            font-size: 1.8rem;
+        }
+
+        /* 📱 Main Tactical Control Console Stage */
+        #main-dashboard {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 24px;
+            height: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .console-grid-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 90px;
+        }
+
+        /* Heavy Structural Console Cards */
+        .console-card {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 22px;
+            color: var(--text-pure);
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.15s, transform 0.1s, border-color 0.15s;
+        }
+
+        .console-card:active {
+            transform: scale(0.98);
+            background-color: var(--border-glow);
+        }
+
+        #dashboard-map-btn {
+            border-color: var(--text-cyber);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.05) 0%, rgba(13, 16, 36, 1) 100%);
+        }
+
+        .horizontal-split-row {
+            display: flex;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .horizontal-split-row .console-card {
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            padding: 22px 10px;
+            font-size: 1rem;
+        }
+
+        .horizontal-split-row .console-card.active-profile {
+            border-color: var(--text-cyber);
+            background-color: rgba(0, 240, 255, 0.05);
+        }
+
+        /* Telemetry Data Grid (Fills Space Rigidly & Cleanly) */
+        .telemetry-matrix {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .matrix-cell {
+            background-color: rgba(13, 16, 36, 0.3);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .matrix-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .matrix-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-pure);
+        }
+
+        .matrix-value.highlight {
+            color: var(--text-cyber);
+        }
+
+        /* Hardware Base Anchored Command Dock */
+        .hardware-dock {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 24px 30px 24px;
+            background: linear-gradient(180deg, rgba(4, 5, 14, 0) 0%, rgba(4, 5, 14, 1) 50%);
+            display: flex;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #hardware-mic-trigger {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background-color: var(--text-pure);
+            border: none;
+            color: #000000;
+            font-size: 1.7rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;;
+        }
+
+        #hardware-mic-trigger:active {
+            transform: scale(0.92);
+        }
+
+        #hardware-mic-trigger.listening {
+            background-color: var(--accent-red);
+            color: var(--text-pure);
+            box-shadow: 0 0 30px rgba(255, 51, 51, 0.6);
+            animation: tacticalPulse 1.4s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+
+        @keyframes tacticalPulse {
+            to { box-shadow: 0 0 0 24px rgba(255, 51, 51, 0); }
+        }
+
+        /* 🗺️ Immersive Map Overlay Module View Canvas */
+        #map-overlay-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5000;
+            background-color: #000000;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            visibility: hidden;
+        }
+
+        #map-overlay-view.active {
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        #map-viewport-element {
+            width: 100%;
+            height: 100%;
+        }
+
+        #exit-map-button {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 6000;
+            background-color: var(--bg-canvas);
+            border: 2px solid var(--text-pure);
+            color: var(--text-pure);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- ⏱️ Setup Step 1: 3-Second High-Tech Ignition Sequence Stage -->
+        <div id="splash-screen" class="app-view-stage active">
+            <div class="biometric-scanner-ring"></div>
+            <div class="splash-logo">Haptic Sense</div>
+        </div>
+
+        <!-- 👤 Setup Step 2: Onboarding Identity Frame -->
+        <div id="name-screen" class="app-view-stage">
+            <h2 class="setup-title">Enter your name</h2>
+            <input type="text" id="name-input-node" class="setup-input-field" placeholder="Type name here..." autocomplete="off" />
+            <button class="action-submit-btn" onclick="commitNameStep()">Continue</button>
+        </div>
+
+        <!-- ⚙️ Setup Step 3: Device Calibration Profile Selector -->
+        <div id="mode-screen" class="app-view-stage">
+            <h2 class="setup-title">Chose system mode</h2>
+            <div class="selection-stack">
+                <div class="tactical-choice-plate" id="plate-blind" onclick="selectProfileModeConfig('blind')">
+                    <span class="plate-glyph">🦯</span>
+                    <span>Blind Mode</span>
+                </div>
+                <div class="tactical-choice-plate" id="plate-deaf" onclick="selectProfileModeConfig('deaf')">
+                    <span class="plate-glyph">🧏</span>
+                    <span>Deaf Mode</span>
+                </div>
+            </div>
+            <button class="action-submit-btn" style="margin-top: 35px;" onclick="executeMainEngineLaunch()">Initialize Engine</button>
+        </div>
+
+        <!-- 📱 Primary System Dashboard Stage Console -->
+        <div id="main-dashboard" class="app-view-stage">
+            <header>
+                <h1>System Console</h1>
+            </header>
+
+            <div class="console-grid-layout">
+                <button class="console-card" id="dashboard-map-btn" onclick="activateMapLayer()">
+                    <span class="plate-glyph">🗺️</span>
+                    <span>MAP VIEW ACTIVATED</span>
+                </button>
+
+                <div class="horizontal-split-row">
+                    <button class="console-card" id="console-tab-blind" onclick="switchActiveDashboardProfile('blind')">
+                        <span class="plate-glyph">🦯</span>
+                        <span>BLIND</span>
+                    </button>
+                    <button class="console-card" id="console-tab-deaf" onclick="switchActiveDashboardProfile('deaf')">
+                        <span class="plate-glyph">🧏</span>
+                        <span>DEAF</span>
+                    </button>
+                </div>
+
+                <!-- Technical Status Grid Display -->
+                <div class="telemetry-matrix">
+                    <div class="matrix-cell">
+                        <span class="matrix-label">Operator</span>
+                        <span class="matrix-value highlight" id="view-user-name">GUEST</span>
+                    </div>
+                    <div class="matrix-cell">
+                        <span class="matrix-label">Core Engine</span>
+                        <span class="matrix-value" style="color: #10B981;">ONLINE</span>
+                    </div>
+                    <div class="matrix-cell">
+                        <span class="matrix-label">Active Mode</span>
+                        <span class="matrix-value highlight" id="view-active-mode">NONE</span>
+                    </div>
+                    <div class="matrix-cell">
+                        <span class="matrix-label">System Feed</span>
+                        <span class="matrix-value" id="view-system-status">STANDBY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Dock Panel Bracket Base Controls -->
+            <div class="hardware-dock">
+                <button id="hardware-mic-trigger" onclick="handleManualMicToggle()">🎤</button>
+            </div>
+        </div>
+
+        <!-- 🗺️ Full Edge Viewport Mapping Module Overlay Layout -->
+        <div id="map-overlay-view">
+            <button id="exit-map-button" onclick="deactivateMapLayer()">✕ Disengage</button>
+            <div id="map-viewport-element"></div>
+        </div>
+
+    </div>
+
+    <!-- Leaflet JS Map Engine Core File -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Global Application Context Configuration Store
+        let runtimeStateStore = {
+            operatorName: "User",
+            calibratedMode: "",
+            currentActiveScreen: "splash"
+        };
+        
+        let mapCoreInstance = null;
+        let persistentSpeechRecognitionEngine = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeBackgroundVoiceEngine();
+
+            // Run the precise 3-second high-tech ignition sequence
+            setTimeout(() => {
+                transitionOnboardingScreens('splash-screen', 'name-screen');
+                runtimeStateStore.currentActiveScreen = "name";
+            }, 3000);
+        });
+
+        // 🎙️ CORE AUDIO FRAMEWORK: Active immediately on app launch
+        function initializeBackgroundVoiceEngine() {
+            const NativeSpeechModule = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (NativeSpeechModule) {
+                persistentSpeechRecognitionEngine = new NativeSpeechModule();
+                persistentSpeechRecognitionEngine.continuous = false;
+                persistentSpeechRecognitionEngine.lang = 'en-US';
+
+                persistentSpeechRecognitionEngine.onresult = (event) => {
+                    const phraseInbound = event.results[0][0].transcript.toLowerCase().trim();
+                    processGlobalVoiceCommands(phraseInbound);
+                };
+
+                persistentSpeechRecognitionEngine.onerror = () => {
+                    restartVoiceCaptureLoop();
+                };
+
+                persistentSpeechRecognitionEngine.onend = () => {
+                    restartVoiceCaptureLoop();
+                };
+
+                persistentSpeechRecognitionEngine.start();
+            }
+        }
+
+        function restartVoiceCaptureLoop() {
+            if (persistentSpeechRecognitionEngine) {
+                try {
+                    persistentSpeechRecognitionEngine.start();
+                } catch(e) {
+                    // Absorb instance handling conflicts silently
+                }
+            }
+        }
+
+        function processGlobalVoiceCommands(spokenPhrase) {
+            updateDashboardTelemetryStatus(`Heard: "${spokenPhrase}"`);
+
+            // 📂 PHASE 1: Setup Step Interaction Logic (Hands-Free Processing)
+            if (runtimeStateStore.currentActiveScreen === "name") {
+                document.getElementById('name-input-node').value = spokenPhrase;
+                executeVocalResponse(`Name captured as ${spokenPhrase}. Please say continue.`);
+                return;
+            }
+            if (spokenPhrase.includes("continue") && runtimeStateStore.currentActiveScreen === "name") {
+                commitNameStep();
+                return;
+            }
+            if (runtimeStateStore.currentActiveScreen === "mode") {
+                if (spokenPhrase.includes("blind")) {
+                    selectProfileModeConfig('blind');
+                    executeVocalResponse("Blind mode chosen. Say initialize engine.");
+                    return;
+                }
+                if (spokenPhrase.includes("deaf")) {
+                    selectProfileModeConfig('deaf');
+                    executeVocalResponse("Deaf mode chosen. Say initialize engine.");
+                    return;
+                }
+                if (spokenPhrase.includes("initialize engine") || spokenPhrase.includes("initialize")) {
+                    executeMainEngineLaunch();
+                    return;
+                }
+            }
+
+            // 📱 PHASE 2: Live Console Dashboard State Management Commands
+            if (runtimeStateStore.currentActiveScreen === "dashboard") {
+                if (spokenPhrase.includes("open map") || spokenPhrase.includes("map view")) {
+                    executeVocalResponse("Opening Map System.");
+                    activateMapLayer();
+                    return;
+                }
+                if (spokenPhrase.includes("close map") || spokenPhrase.includes("exit map") || spokenPhrase.includes("disengage")) {
+                    executeVocalResponse("Closing Map.");
+                    deactivateMapLayer();
+                    return;
+                }
+                if (spokenPhrase.includes("blind mode")) {
+                    executeVocalResponse("Switching profile to Blind.");
+                    switchActiveDashboardProfile('blind');
+                    return;
+                }
+                if (spokenPhrase.includes("deaf mode")) {
+                    executeVocalResponse("Switching profile to Deaf.");
+                    switchActiveDashboardProfile('deaf');
+                    return;
+                }
+            }
+        }
+
+        // 🎛️ BOLD, MASCULINE SPEAKER TUNING ENGINE
+        function executeVocalResponse(textToSpeak) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const syntaxUtterance = new SpeechSynthesisUtterance(textToSpeak);
+                const catalogedVoices = window.speechSynthesis.getVoices();
+                
+                // Search specifically for deeper masculine profile variants
+                const boldMaleVoice = catalogedVoices.find(v => 
+                    v.name.includes("David") || 
+                    v.name.includes("Microsoft David") || 
+                    v.name.includes("Male") || 
+                    v.name.includes("Google UK English Male")
+                );
+                
+                if (boldMaleVoice) {
+                    syntaxUtterance.voice = boldMaleVoice;
+                }
+                
+                // Authoritative Pitch & Cadence calibrations
+                syntaxUtterance.pitch = 0.85;  // Low register chest-resonance
+                syntaxUtterance.rate = 0.90;   // Deliberate, bossy command velocity
+                window.speechSynthesis.speak(syntaxUtterance);
+            }
+        }
+
+        function transitionOnboardingScreens(exitElementId, enterElementId) {
+            document.getElementById(exitElementId).classList.remove('active');
+            document.getElementById(enterElementId).classList.add('active');
+        }
+
+        function commitNameStep() {
+            const configuredNameStr = document.getElementById('name-input-node').value.trim();
+            if (configuredNameStr === "") {
+                executeVocalResponse("Please enter or speak your name to unlock the system core.");
+                return;
+            }
+            runtimeStateStore.operatorName = configuredNameStr;
+            runtimeStateStore.currentActiveScreen = "mode";
+            transitionOnboardingScreens('name-screen', 'mode-screen');
+        }
+
+        function selectProfileModeConfig(selectedModeKey) {
+            document.getElementById('plate-blind').classList.remove('selected');
+            document.getElementById('plate-deaf').classList.remove('selected');
+            
+            if (selectedModeKey === 'blind') {
+                document.getElementById('plate-blind').classList.add('selected');
+            } else {
+                document.getElementById('plate-deaf').classList.add('selected');
+            }
+            runtimeStateStore.calibratedMode = selectedModeKey;
+        }
+
+        function executeMainEngineLaunch() {
+            if (runtimeStateStore.calibratedMode === "") {
+                executeVocalResponse("Please choose system mode configuration profile to continue.");
+                return;
+            }
+            
+            // Hydrate values into telemetry grid instantly
+            document.getElementById('view-user-name').innerText = runtimeStateStore.operatorName.toUpperCase();
+            switchActiveDashboardProfile(runtimeStateStore.calibratedMode);
+            
+            // Shift screen stages cleanly
+            document.getElementById('mode-screen').classList.remove('active');
+            document.getElementById('main-dashboard').classList.add('active');
+            
+            runtimeStateStore.currentActiveScreen = "dashboard";
+            updateDashboardTelemetryStatus("READY");
+            
+            // 🔥 Personalized bossy tactical launch greeting
+            executeVocalResponse(`Welcome to the world of haptic sense, ${runtimeStateStore.operatorName}.`);
+        }
+
+        function switchActiveDashboardProfile(targetProfileKey) {
+            document.getElementById('console-tab-blind').classList.remove('active-profile');
+            document.getElementById('console-tab-deaf').classList.remove('active-profile');
+            
+            if (targetProfileKey === 'blind') {
+                document.getElementById('console-tab-blind').classList.add('active-profile');
+            } else {
+                document.getElementById('console-tab-deaf').classList.add('active-profile');
+            }
+            
+            runtimeStateStore.calibratedMode = targetProfileKey;
+            document.getElementById('view-active-mode').innerText = targetProfileKey.toUpperCase();
+        }
+
+        function updateDashboardTelemetryStatus(statusTxtValue) {
+            document.getElementById('view-system-status').innerText = statusTxtValue.toUpperCase();
+        }
+
+        function activateMapLayer() {
+            document.getElementById('map-overlay-view').classList.add('active');
+            updateDashboardTelemetryStatus("MAP ENGAGED");
+
+            setTimeout(() => {
+                if (!mapCoreInstance) {
+                    mapCoreInstance = L.map('map-viewport-element', { zoomControl: false }).setView([17.6868, 83.2185], 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapCoreInstance);
+                }
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((hardwarePosition) => {
+                        const preciseLat = hardwarePosition.coords.latitude;
+                        const preciseLon = hardwarePosition.coords.longitude;
+                        mapCoreInstance.setView([preciseLat, preciseLon], 15);
+                        L.marker([preciseLat, preciseLon]).addTo(mapCoreInstance).bindPopup('Operator Position Anchor').openPopup();
+                    });
+                }
+            }, 400);
+        }
+
+        function deactivateMapLayer() {
+            document.getElementById('map-overlay-view').classList.remove('active');
+            updateDashboardTelemetryStatus("READY");
+        }
+
+        function handleManualMicToggle() {
+            const visualNode = document.getElementById('hardware-mic-trigger');
+            if (visualNode.classList.contains('listening')) {
+                visualNode.classList.remove('listening');
+                updateDashboardTelemetryStatus("READY");
+            } else {
+                visualNode.classList.add('listening');
+                updateDashboardTelemetryStatus("LISTENING");
+                executeVocalResponse("Listening for system input command.");
+            }
+        }
+    </script>
+</body>
+</html>
