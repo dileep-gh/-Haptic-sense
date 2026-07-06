@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haptic Sense</title>
+    <!-- Leaflet CSS for mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        /* High-Contrast Premium Accessibility Palette */
+        :root {
+            --bg-canvas: #0B0D17;       /* Deep Obsidian Midnight */
+            --bg-tile: #16192B;         /* Rich Slate Blue */
+            --text-main: #FFFFFF;       /* Pure White High Contrast */
+            --accent-action: #3B82F6;   /* Solid Clear Blue Accent */
+            --border-crisp: #2E3556;    /* Highly Visible Boundary Line */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ⏱️ Phase 1: 2-Second Launch Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-canvas);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+
+        .splash-logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            opacity: 0;
+            transform: scale(0.95);
+            animation: fadeInLogo 1.2s forwards ease-out 0.2s;
+        }
+
+        @keyframes fadeInLogo {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 📱 Phase 2: Main Application Dashboard */
+        #app-dashboard {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px 0 25px 0;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Massive Touch Targets / Blocks */
+        .accessible-card {
+            background-color: var(--bg-tile);
+            border: 3px solid var(--border-crisp);
+            border-radius: 16px;
+            padding: 24px;
+            color: var(--text-main);
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .accessible-card:active {
+            transform: scale(0.98);
+            background-color: var(--border-crisp);
+        }
+
+        /* Specific Button Custom Named: Map View */
+        #map-view-btn {
+            border: 3px solid var(--accent-action);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .mode-row {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .mode-row .accessible-card {
+            flex: 1;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px 10px;
+        }
+
+        /* Live Text Status Subtitle Box */
+        #status-box {
+            background-color: var(--bg-tile);
+            border: 2px dashed var(--border-crisp);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1rem;
+            color: #A0AEC0;
+            text-align: center;
+            margin-top: auto;
+            font-weight: 500;
+        }
+
+        /* Core Action Floating Sonic Mic Orb */
+        .mic-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        #mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--accent-action);
+            border: 4px solid var(--text-main);
+            color: var(--text-main);
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+            transition: transform 0.1s;
+        }
+
+        #mic-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Dynamic Mic Listening Pulse Animation */
+        #mic-btn.listening {
+            animation: pulseMic 1.2s infinite cubic-bezier(0.66, 0, 0, 1);
+            background-color: #EF4444; /* Alert red color changes cleanly when active */
+        }
+
+        @keyframes pulseMic {
+            to {
+                box-shadow: 0 0 0 25px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* 🗺️ Phase 3: Active Map View Edge-To-Edge Overlay */
+        #map-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5000;
+            background-color: #000;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            visibility: hidden;
+        }
+
+        #map-overlay.active {
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Semi-Transparent Floating Exit Target */
+        #close-map-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 6000;
+            background-color: rgba(11, 13, 23, 0.85);
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #close-map-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ⏱️ Phase 1: Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-logo">HAPTIC SENSE</div>
+    </div>
+
+    <!-- 📱 Phase 2: Main Dashboard Grid -->
+    <div id="app-dashboard">
+        <header>
+            <h1>HAPTIC SENSE</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- Named exactly: Map View -->
+            <button class="accessible-card" id="map-view-btn" onclick="openMapView()">
+                <span>🗺️</span> <span>MAP VIEW</span>
+            </button>
+
+            <div class="mode-row">
+                <button class="accessible-card" onclick="setMode('blind')">
+                    <span>🦯</span><span>BLIND MODE</span>
+                </button>
+                <button class="accessible-card" onclick="setMode('deaf')">
+                    <span>🧏</span><span>DEAF MODE</span>
+                </button>
+            </div>
+
+            <div id="status-box">System Initializing Framework...</div>
+
+            <div class="mic-container">
+                <button id="mic-btn" onclick="toggleVoiceInput()">🎤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🗺️ Phase 3: Immersive Full Map Canvas Overlay -->
+    <div id="map-overlay">
+        <button id="close-map-btn" onclick="closeMapView()">✕ Close</button>
+        <div id="map-canvas"></div>
+    </div>
+
+    <!-- Leaflet JS Map Script Engine -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        let map = null;
+        let recognition = null;
+        let activeMode = 'normal';
+
+        // Initialize Launch Sequence
+        window.addEventListener('DOMContentLoaded', () => {
+            // Setup voice recognition loop safely if available in device browser
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const resultText = event.results[0][0].transcript;
+                    updateStatus(`Heard: "${resultText}"`);
+                    handleVoicePipeline(resultText);
+                };
+
+                recognition.onerror = () => {
+                    updateStatus("Voice matching idle...");
+                    document.getElementById('mic-btn').classList.remove('listening');
+                };
+
+                recognition.onend = () => {
+                    document.getElementById('mic-btn').classList.remove('listening');
+                };
+            }
+
+            // Execute the 2-Second transition block
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                const dashboard = document.getElementById('app-dashboard');
+                
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                dashboard.style.opacity = '1';
+                
+                updateStatus("System Ready.");
+                speakPremiumWelcome();
+            }, 2000);
+        });
+
+        // High-Quality Optimized Audio Voice Engine
+        function speakPremiumWelcome() {
+            if ('speechSynthesis' in window) {
+                const text = "Welcome to the world of Haptic Sense.";
+                const utterance = new SpeechSynthesisUtterance(text);
+                const voices = window.speechSynthesis.getVoices();
+                
+                // Prioritize advanced system voice models
+                const premiumVoice = voices.find(voice => 
+                    voice.name.includes("Google US English") || 
+                    voice.name.includes("Samantha") || 
+                    voice.name.includes("Natural") ||
+                    voice.lang === "en-US"
+                );
+                
+                if (premiumVoice) utterance.voice = premiumVoice;
+                utterance.rate = 0.95; // Crisp, slower, high-end rhythmic cadence
+                utterance.pitch = 1.0;
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakOutput(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop tracking previous audio
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Dashboard Status Update Panel Utility
+        function updateStatus(text) {
+            document.getElementById('status-box').innerText = text;
+        }
+
+        // Accessibility Profile Controls
+        function setMode(mode) {
+            activeMode = mode;
+            const msg = `${mode.toUpperCase()} MODE ACTIVATED`;
+            updateStatus(msg);
+            speakOutput(msg);
+        }
+
+        // Immersive Map Overlay Logic Engine
+        function openMapView() {
+            const overlay = document.getElementById('map-overlay');
+            overlay.classList.add('active');
+            updateStatus("Displaying dynamic map coordinates...");
+
+            // Deferred Map Canvas Mounting to preserve processing memory
+            setTimeout(() => {
+                if (!map) {
+                    // Default centering on a standard global tracking position
+                    map = L.map('map-canvas', { zoomControl: false }).setView([17.6868, 83.2185], 14);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap parameters'
+                    }).addTo(map);
+                }
+                // Try fetching live GPS telemetry coordinates instantly
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        map.setView([lat, lon], 15);
+                        
+                        // Clear previous markers, plot clean high-contrast pin
+                        L.marker([lat, lon]).addTo(map).bindPopup('You are here.').openPopup();
+                    }, () => {
+                        updateStatus("GPS Signal limited. Using base telemetry.");
+                    });
+                }
+            }, 400);
+        }
+
+        function closeMapView() {
+            document.getElementById('map-overlay').classList.remove('active');
+            updateStatus("System Ready.");
+        }
+
+        // Sonic Voice Capture Interface Trigger
+        function toggleVoiceInput() {
+            if (!recognition) {
+                updateStatus("Voice matching unsupported on this device profile.");
+                return;
+            }
+            const micBtn = document.getElementById('mic-btn');
+            if (micBtn.classList.contains('listening')) {
+                recognition.stop();
+            } else {
+                micBtn.classList.add('listening');
+                updateStatus("Listening for commands or questions...");
+                recognition.start();
+            }
+        }
+
+        // Smart Hybrid Local / AI Gateway Script Check
+        function handleVoicePipeline(phrase) {
+            const cleanPhrase = phrase.toLowerCase().trim();
+
+            // 1. Layer 1: The Local System Commands Check (Priority execution)
+            if (cleanPhrase.includes("open map") || cleanPhrase.includes("map view") || cleanPhrase.includes("route")) {
+                speakOutput("Opening Map View dashboard layout.");
+                openMapView();
+                return;
+            }
+            if (cleanPhrase.includes("close map") || cleanPhrase.includes("exit map")) {
+                speakOutput("Closing Map layout.");
+                closeMapView();
+                return;
+            }
+            if (cleanPhrase.includes("blind mode")) {
+                setMode('blind');
+                return;
+            }
+            if (cleanPhrase.includes("deaf mode")) {
+                setMode('deaf');
+                return;
+            }
+
+            // 2. Layer 2: Cloud AI Brain Framework Fallback
+            updateStatus("Querying Connected AI Brain...");
+            
+            /* 
+               🔌 DEV NOTE INTEGRATION PIPELINE:
+               To make this actively communicate over the live internet web cloud,
+               fetch your free developer API key and drop an endpoint route call right here:
+               
+               fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=YOUR_API_KEY`, {
+                   method: "POST",
+                   headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ contents: [{ parts: [{ text: cleanPhrase }] }] })
+               })
+               .then(res => res.json())
+               .then(data => {
+                   let aiAnswer = data.candidates[0].content.parts[0].text;
+                   speakOutput(aiAnswer);
+                   updateStatus(aiAnswer);
+               });
+            */
+            
+            // Temporary high-fidelity baseline framework response simulating live loop connection
+            setTimeout(() => {
+                const simulatedAiResponse = `I processed your request regarding "${phrase}". Please complete the API connection loop setup in the backend config to stream full answers directly here!`;
+                updateStatus(simulatedAiResponse);
+                speakOutput("Processing complete.");
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
