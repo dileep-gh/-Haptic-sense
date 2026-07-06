@@ -1,4 +1,4 @@
-const CACHE_NAME = 'haptic-sense-v1';
+const CACHE_NAME = 'haptic-sense-v2';
 const ASSETS = [
   'index.html',
   'manifest.json'
