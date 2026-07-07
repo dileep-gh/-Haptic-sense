@@ -9,6 +9,6 @@
   "dependencies": {
     "@google/genai": "^0.1.1",
     "cors": "^2.8.5",
-    "express": "^2.19.1"
+    "express": "^4.19.2"
   }
 }
